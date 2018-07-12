@@ -1,0 +1,83 @@
+#FROM v1a-occ-git-01.dev.dtnaws.co.th:5000/docker-registry/nginx_php7-template:occmnpw
+FROM v1a-occ-git-01.dev.dtnaws.co.th:5000/docker-registry/nginx_php7-template:new-occmnpw
+
+RUN mkdir -p /var/www/html && mkdir -p /var/www/html/var/cache  && rm -f /usr/local/etc/php-fpm.d/docker.conf
+RUN chown -R occmnpwl:webadm /var/www/html
+
+
+ADD ./conf/nginx/fastcgi_params /etc/nginx/fastcgi_params
+ADD ./conf/nginx/mime.types /etc/nginx/mime.types
+ADD ./conf/nginx/nginx.conf /etc/nginx/nginx.conf
+ADD ./conf/nginx/me2.conf /etc/nginx/sites-enabled/me2.conf
+ADD ./conf/nginx/nginx.conf.sample /etc/nginx/nginx.conf.sample
+
+ADD ./conf/php-fpm/php-fpm.conf /usr/local/etc/php-fpm.d/default.conf
+ADD ./conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/www.conf
+ADD ./conf/php-fpm/config.ini /usr/local/etc/php/conf.d/config.ini
+#ADD ./conf/php-fpm/deploy_script.sh /var/www/html/deploy_script.sh
+
+ADD --chown=occmnpwl:webadm ./data/html/ /var/www/html/
+
+ADD ./etc/supervisord.conf /etc/supervisor/conf.d/
+ADD ./etc/occ-crontab /etc/cron.d/occ-crontab
+
+RUN  crontab /etc/cron.d/occ-crontab
+
+RUN mkdir -p /var/lib/nginx/body \
+    && mkdir -p /var/run/php-fpm \
+    && mkdir -p /var/log/php-fpm \
+    && mkdir -p /var/cache/nginx/client_temp
+
+#build with specific user    
+#RUN su - occmnpwl    
+
+COPY --chown=occmnpwl:webadm ./app_conf/env.php.setup /var/www/html/app/etc/env.php
+RUN  su - occmnpwl -c  /var/www/html/deploy_magento.sh occmnpwl
+COPY --chown=occmnpwl:webadm ./app_conf/env.php /var/www/html/app/etc/env.php
+
+#RUN whoami && chown -R occmnpwl:webadm /var/www/html/app/etc/*
+#RUN chown -R occmnpwl:webadm /var/www/
+#RUN find /var/www/ -not -user occmnpwl -execdir chown occmnpwl:webadm  {} \+
+
+RUN chown -R occmnpwl:webadm /var/www/html/var
+RUN chown -R occmnpwl:webadm /var/log/nginx
+RUN chown -R occmnpwl:webadm /etc/nginx
+RUN chown -R occmnpwl:webadm /var/lib/nginx/
+RUN chown -R occmnpwl:webadm /var/cache/nginx/
+
+
+RUN chown -R occmnpwl:webadm /usr/local/etc/
+RUN chown -R occmnpwl:webadm /var/run/php-fpm
+RUN chown -R occmnpwl:webadm /var/log/php-fpm
+
+
+#RUN chmod -R 755 /var/www/
+#RUN find /var/www ! -perm 775 -print0 | xargs -0 -I {} chmod 775 {}
+
+RUN ls -al /var/www/html/generated
+RUN chmod -R 755 /var/www/html/var  
+#RUN chmod -R 755 /var/www/html/generated
+
+#RUN chmod -R 755 /var/www/html/var/cache
+RUN chmod -R 777 /run
+RUN chmod -R 755 /var/cache/nginx/client_temp
+
+
+#Start Deploy 
+#RUN mkdir -p /var/www/conf
+#COPY ./app_conf/env.php.setup /var/www/html/app/etc/env.php
+#RUN  /var/www/html/deploy_magento.sh occmnpwl
+#RUN  /var/www/html/deploy_script.sh
+#COPY ./app_conf/env.php /var/www/html/app/etc/env.php
+
+
+#RUN chmod -R 775 /var/www/html/var/cache
+#RUN chown -R occmnpwl:webadm /var/www/html/app/etc/env.php
+#RUN chown -R occmnpwl:webadm /var/www/html/pub
+#RUN chown -R occmnpwl:webadm /var/www/html/var
+
+
+EXPOSE 8080
+WORKDIR /var/www/html
+
+CMD [ "/usr/bin/supervisord"]

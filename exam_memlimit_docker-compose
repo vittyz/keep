@@ -1,22 +1,24 @@
-version: '2'
+version: '2.2'
 services:
-    dev-occmnpweb:
-        image: v1a-occ-git-01.dev.dtnaws.co.th:5000/docker-registry/occmnp/dev-occmnpweb:402
-        container_name: dev-occmnpweb
+    occmnpweb_sme:
+        image: v1a-occ-git-01.dev.dtnaws.co.th:5000/docker-registry/occmnp/occmnpwf_sme:74
+        container_name: f-occmnpweb_sme
+        cpus: 1
+        mem_limit: 2G
         restart: always
         ports:
-          - 7780:8080
+          - 7682:8080
         volumes:
           - /etc/localtime:/etc/localtime:ro
           - /etc/timezone:/etc/timezone:ro
-          - ../../data/occmnpweb/media:/var/www/html/pub/media:rw
+          - ../../data/occmnpweb/media_sme:/var/www/html/pub/media:rw
           - ../../conf/occmnpweb/keystore:/etc/nginx/conf.d/keystore
-          - ../../logs/nginx:/var/log/nginx
-          - ../../logs/occmnpweb:/var/www/html/var/log
-        mem_limit: 1000000000
+          - ../../logs/nginx_sme:/var/log/nginx
+          - ../../logs/occmnpweb_sme:/var/www/html/var/log
+
+
         environment:
           - SET_CONTAINER_TIMEZONE=true
           - CONTAINER_TIMEZONE=Asia/Bangkok
           - TZ=ICT-7
 networks:
-    default:

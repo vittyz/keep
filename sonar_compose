@@ -1,0 +1,35 @@
+version: '3'
+services:
+    sonarqube:
+        image: sonarqube
+        networks:
+            - esvapidev
+        deploy:
+            mode: replicated
+            replicas: 1
+            resources:
+                limits:
+                    cpus: '0.25'
+                    memory: 512M
+            update_config:
+                parallelism: 1
+                delay: 15s
+        volumes:
+            - $PWD/sonarqube_conf:/opt/sonarqube/conf
+            - $PWD/data:/opt/sonarqube/data
+            - $PWD/extensions:/opt/sonarqube/extensions
+        ports:
+            - 8888:9000
+        environment:
+            - SET_CONTAINER_TIMEZONE=true
+            - CONTAINER_TIMEZONE=Asia/Bangkok
+            - TZ=ICT-7
+        logging:
+            driver: "json-file"
+            options:
+                max-size: 100m
+                max-file: "5"
+        command: "java -jar apps/subscriberProperty.jar"
+networks:
+    esv-net:
+        external: true

@@ -1,0 +1,2 @@
+delete file  and run 
+>> gitlab-ctl registry-garbage-collect

@@ -1,1 +1,5 @@
+#SOURCE#
 source file for include file and pass env value ==> https://bash.cyberciti.biz/guide/Source_command
+
+"Run Docker with specific user and command arg"
+ docker exec  --user occmnpwf f-occmnpweb_onls sh -c "ls -al"

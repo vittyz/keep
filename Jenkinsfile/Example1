@@ -1,0 +1,43 @@
+node('occFeatureServer') {
+    def jobUserId, jobUserName
+
+    wrap([$class: 'BuildUser']) {
+        jobUserId = "${BUILD_USER_ID}"
+        jobUserName = "${BUILD_USER}"
+              
+    }
+    
+
+
+    stage('Prepare Source Code') {
+
+        checkout scm
+            
+        shortCommit = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+        
+        echo "Running ${env.BUILD_ID} "
+        echo "GIT: $shortCommit "
+        echo "ENV: ${env.JENKINS_URL}"
+        echo "Build By: $jobUserId"   
+
+        currentBuild.displayName = "${env.BUILD_ID} : [$shortCommit] - $jobUserId"
+
+
+        sh 'rsync -avzh --exclude=".git" ./sourcecode/ /usr/home/WEBADM/occmnpwf/Script/feature/html/ --delete'
+        sh 'cp -p document/script/deploy_magento.sh /usr/home/WEBADM/occmnpwf/Script/feature/html/'
+    }
+    
+    stage('Copy Config File') {
+        sh 'cp -f /usr/home/WEBADM/occmnpwf/Script/feature/config/env.php /usr/home/WEBADM/occmnpwf/Script/feature/html/app/etc/'
+    }
+    
+    stage('Build') {
+        ansiColor('xterm') {
+            sh 'docker exec  --user occmnpwf f-occmnpweb_onls sh -c "bash deploy_magento.sh occmnpwf"'
+                
+        }
+    }  
+}
+
+
+

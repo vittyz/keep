@@ -21,7 +21,7 @@ node('occFeatureServer') {
         // GIT_PREVIOUS_COMMIT=6f2e319a1fc82707ebaf800fce15a7a54238eb71
         // GIT_PREVIOUS_SUCCESSFUL_COMMIT=310fce159a1fc82707ebaf806f2ea7a54238eb71
         // GIT_URL=https://stash.someworkplace.com/scm/poc/api-sample.git
-    }
+    
     
         shortCommit = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
         branchName = scmVars.GIT_BRANCH
@@ -41,7 +41,7 @@ node('occFeatureServer') {
     }
     
     stage('Copy Config File') {
-        sh 'cp -f /usr/home/WEBADM/occmnpwf/Script/feature/config/env.php /usr/home/WEBADM/occmnpwf/Script/feature/html/app/etc/'
+        // sh 'cp -f /usr/home/WEBADM/occmnpwf/Script/feature/config/env.php /usr/home/WEBADM/occmnpwf/Script/feature/html/app/etc/'
     }
     
     try {
@@ -54,7 +54,7 @@ node('occFeatureServer') {
     } catch (err) {
     
         currentBuild.result = "FAILURE"
-        emailext attachLog: true, body: '..', subject: "OCC: Build fail on ${env.BRANCH_NAME} [${currentBuild.fullDisplayName}]", to: 'woravitp@dtac.co.th'
+        emailext attachLog: true, body: '..', subject: "OCC: Build fail on $branchName [${currentBuild.fullDisplayName}]", from: 'jenkindtn@outlook.com' ,  to: 'woravitp@dtac.co.th,chookiat.somwangsombat@dtac.co.th'
         
    }
 }

@@ -1,0 +1,63 @@
+node('occFeatureServer') {
+    def jobUserId, jobUserName
+
+    wrap([$class: 'BuildUser']) {
+        jobUserId = "${BUILD_USER_ID}"
+        jobUserName = "${BUILD_USER}"
+              
+    }
+    
+    def shortCommit
+    def branchName
+
+
+    stage('Prepare Source Code') {
+
+        scmVars = checkout scm
+
+        // scmVars contains the following values
+        // GIT_BRANCH=origin/mybranch
+        // GIT_COMMIT=fc8279a107ebaf806f2e310fce15a7a54238eb71
+        // GIT_PREVIOUS_COMMIT=6f2e319a1fc82707ebaf800fce15a7a54238eb71
+        // GIT_PREVIOUS_SUCCESSFUL_COMMIT=310fce159a1fc82707ebaf806f2ea7a54238eb71
+        // GIT_URL=https://stash.someworkplace.com/scm/poc/api-sample.git
+    }
+    
+        shortCommit = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+        branchName = scmVars.GIT_BRANCH
+        
+        
+        echo "Running ${env.BUILD_ID} "
+        echo "GIT: $shortCommit "
+        echo "ENV: ${env.JENKINS_URL}"
+        echo "Build By: $jobUserId"
+        echo "Branch: $branchName"
+    
+        currentBuild.displayName = "${env.BUILD_ID} : [$shortCommit] - $jobUserId"
+    
+
+        sh 'rsync -avzh --exclude=".git" ./sourcecode/ /usr/home/WEBADM/occmnpwf/Script/feature/html/ --delete'
+        sh 'cp -p document/script/deploy_magento.sh /usr/home/WEBADM/occmnpwf/Script/feature/html/'
+    }
+    
+    stage('Copy Config File') {
+        sh 'cp -f /usr/home/WEBADM/occmnpwf/Script/feature/config/env.php /usr/home/WEBADM/occmnpwf/Script/feature/html/app/etc/'
+    }
+    
+    try {
+        stage('Build') {
+            ansiColor('xterm') {
+                sh 'docker exec  --user occmnpwf f-occmnpweb_onls sh -c "bash deploy_magento.sh occmnpwf"'
+                        
+            }
+        }
+    } catch (err) {
+    
+        currentBuild.result = "FAILURE"
+        emailext attachLog: true, body: '..', subject: "OCC: Build fail on ${env.BRANCH_NAME} [${currentBuild.fullDisplayName}]", to: 'woravitp@dtac.co.th'
+        
+   }
+}
+
+
+

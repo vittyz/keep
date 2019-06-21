@@ -1,0 +1,72 @@
+pipeline {
+
+    agent { label 'rs-usd-app-211' }
+    //agent any
+    
+    environment {
+        dockerImage = ''
+    }
+    
+    tools {
+        maven 'maven3.5.2'
+        jdk 'jdk8-slave'
+    }
+
+    stages {
+        stage('Build') {
+           steps {
+                script {
+                    dir("source") {
+                        /*sh '''
+                            echo "PATH = ${PATH}"
+                            echo "M2_HOME = ${M2_HOME}"
+                            echo "JAVA_HOME = ${JAVA_HOME}"
+                        '''*/
+                        sh 'mvn -B -DskipTests clean package'
+                    }
+                }
+            }
+        }
+        stage('Scan') {
+            environment {
+                scannerHome = tool 'SonarQubeScanner'
+            }
+            steps {
+                
+                withSonarQubeEnv('sp-srcscan') {
+                    sh '${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=service-checkbalance '+
+                     '-Dsonar.language=java -Dsonar.sources=source -Dsonar.java.binaries=**/target/classes ' 
+                }
+            }
+        }
+        stage('Build image') {
+            steps {
+                script {
+                    dockerImage = docker.build("sp-git.dtacnetwork.dev/ussd_ivr_app/service-checkbalance:${env.BUILD_ID}", "-f Dockerfile.dev .")
+                }
+            }
+        }
+        stage('Push image') {
+            steps {
+                script {
+                    withDockerRegistry(
+                        credentialsId: '5f665de2-2470-4529-9e75-9716a81a77ba', 
+                        url: 'https://sp-git.dtacnetwork.dev') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        stage('Deployment') {
+            steps {
+                script {
+                    def inptext = readFile file: "deployment-dev.yml" 
+                    inptext = inptext.replaceAll("image_version", "${env.BUILD_ID}")       
+                    writeFile file: "deployment-dev.yml", text: inptext
+                    sh 'kubectl create secret generic ucheckbalance --from-file=user.txt --dry-run -o yaml | kubectl apply -f -'
+                    sh 'kubectl apply -f deployment-dev.yml'
+                }
+            }
+        }
+    }
+}
